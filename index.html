@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats par module</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        function ResultsDisplay() {
+            const [results, setResults] = React.useState({});
+
+            React.useEffect(() => {
+                fetch('/api/results')
+                    .then(response => response.json())
+                    .then(data => setResults(data));
+            }, []);
+
+            return (
+                <div>
+                    <h1>Résultats par module</h1>
+                    {Object.entries(results).map(([module, data]) => (
+                        <div key={module}>
+                            <h2>{module}</h2>
+                            <p>Moyenne: {data.moyenne?.toFixed(2) || 'N/A'}</p>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Épreuve</th>
+                                        <th>Note</th>
+                                        <th>Coefficient</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {data.notes.map((note, index) => (
+                                        <tr key={index}>
+                                            <td>{note.epreuve}</td>
+                                            <td>{note.note || 'N/A'}</td>
+                                            <td>{note.coefficient}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ResultsDisplay />, document.getElementById('root'));
+    </script>
+</body>
+</html>
