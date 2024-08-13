@@ -53,7 +53,7 @@ def run_app():
         
         service = Service(EdgeChromiumDriverManager().install())
         driver = webdriver.Edge(service=service, options=options)
-        
+        driver.maximize_window()
         wait = WebDriverWait(driver, 10)
         
         try:
