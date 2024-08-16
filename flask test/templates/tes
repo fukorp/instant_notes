@@ -1,0 +1,40 @@
+            {% for module, data in modules.items() %}
+                <div class="module">
+                    <div class="module-header" onclick="toggleDetails(this)">
+                        <h2>{{ module }}</h2>
+                    </div>
+                    <div class="module-content">
+                        {% set all_notes = [] %}
+                        {% for epreuve in data['epreuves'] %}
+                            {% set _ = all_notes.append(epreuve['Notes']) %}
+                        {% endfor %}
+                        
+                        {% set numeric_notes = all_notes|select('isnumeric') %}
+                        {% set v_only = all_notes|select('string')|reject('isnumeric') %}
+
+                        {% if numeric_notes|length > 0 %}
+                            {% set moyenne = (data['total_points'] / data['total_coeff'])|round(2) %}
+                            <div class="moyenne {% if moyenne >= 10 %}vert{% elif moyenne >= 7 %}orange{% else %}rouge{% endif %}">
+                                {{ moyenne }}
+                            </div>
+                        {% elif "NV" in v_only %}
+                            <div class="moyenne rouge">Non Validé</div>
+                        {% elif v_only|length > 0 %}
+                            <div class="moyenne vert">Validé</div>
+                        {% else %}
+                            <div class="moyenne">N/A</div>
+                        {% endif %}
+
+                        <div class="details">
+                            {% for epreuve in data['epreuves'] %}
+                                <div class="epreuve">
+                                    <h3>{{ epreuve['Épreuve'].split(' - ', 1)[-1] }}</h3>
+                                    <p>Type: {{ epreuve['Type de contrôle'] }}</p>
+                                    <p>Date: {{ epreuve['Début'] }}</p>
+                                    <p>Note: <span class="note">{{ epreuve['Notes'] }}</span> (Coeff: {{ epreuve["Coefficient de l'Épreuve dans le Module"] }})</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}

@@ -33,7 +33,7 @@
             text-align: center;
             color: var(--primary-color);
             font-size: 2.5em;
-            margin-bottom: 20px;
+            margin-bottom: 60px;
         }
 
         .grid {
@@ -124,15 +124,16 @@
                 grid-template-columns: 1fr;
             }
         }
+        
+        .vert { color: green; }
+        .orange { color: orange; }
+        .rouge { color: red; }
+        .details { display: none; }
     </style>
 </head>
-
 <body>
     <div class="container">
         <h1>Relevé de Notes</h1>
-        
-        <canvas id="overallChart"></canvas>
-
         <div class="grid">
             {% set modules = {} %}
             {% for grade in grades %}
@@ -142,10 +143,12 @@
                 {% set _ = modules[grade['Module']]['epreuves'].append(grade) %}
                 {% set note = grade['Notes']|float(default=0) %}
                 {% set coeff = grade["Coefficient de l'Épreuve dans le Module"]|float(default=0) %}
-                {% set _ = modules[grade['Module']].update({
-                    'total_points': modules[grade['Module']]['total_points'] + note * coeff,
-                    'total_coeff': modules[grade['Module']]['total_coeff'] + coeff
-                }) %}
+                {% if note != 0 and coeff != 0 %}
+                    {% set _ = modules[grade['Module']].update({
+                        'total_points': modules[grade['Module']]['total_points'] + note * coeff,
+                        'total_coeff': modules[grade['Module']]['total_coeff'] + coeff
+                    }) %}
+                {% endif %}
             {% endfor %}
 
             {% for module, data in modules.items() %}
@@ -154,11 +157,23 @@
                         <h2>{{ module }}</h2>
                     </div>
                     <div class="module-content">
-                        {% if data['total_coeff'] > 0 %}
+                        {% set all_notes = [] %}
+                        {% for epreuve in data['epreuves'] %}
+                            {% set _ = all_notes.append(epreuve['Notes']) %}
+                        {% endfor %}
+                        {% set numeric_notes = all_notes|select('float') %}
+                        {% set v_only = all_notes|select('equalto', 'V') %}
+                        {% set nv_only = all_notes|select('equalto', 'NV') %}
+
+                        {% if numeric_notes|length > 0 %}
                             {% set moyenne = (data['total_points'] / data['total_coeff'])|round(2) %}
                             <div class="moyenne {% if moyenne >= 10 %}vert{% elif moyenne >= 7 %}orange{% else %}rouge{% endif %}">
                                 {{ moyenne }}
                             </div>
+                        {% elif nv_only|length > 0 %}
+                            <div class="moyenne rouge">Non Validé</div>
+                        {% elif v_only|length > 0 %}
+                            <div class="moyenne vert">Validé</div>
                         {% else %}
                             <div class="moyenne">N/A</div>
                         {% endif %}
@@ -169,7 +184,7 @@
                                     <h3>{{ epreuve['Épreuve'].split(' - ', 1)[-1] }}</h3>
                                     <p>Type: {{ epreuve['Type de contrôle'] }}</p>
                                     <p>Date: {{ epreuve['Début'] }}</p>
-                                    <p>Note: <span class="note">{{ epreuve['Notes'] }}</span> (Coeff: {{ epreuve["Coefficient de l'Épreuve dans le Module"] }})</p>
+                                    <p class="note">Note: {{ epreuve['Notes'] }} (Coeff: {{ epreuve["Coefficient de l'Épreuve dans le Module"] }})</p>
                                 </div>
                             {% endfor %}
                         </div>
@@ -181,45 +196,13 @@
 
     <script>
         function toggleDetails(element) {
-            const details = element.nextElementSibling.querySelector('.details');
-            if (details.style.maxHeight) {
-                details.style.maxHeight = null;
+            var details = element.nextElementSibling.querySelector('.details');
+            if (details.style.display === "none" || details.style.display === "") {
+                details.style.display = "block";
             } else {
-                details.style.maxHeight = details.scrollHeight + "px";
+                details.style.display = "none";
             }
         }
-
-        // Création du graphique global
-        const ctx = document.getElementById('overallChart').getContext('2d');
-        const data = {
-            labels: [{% for module in modules %}'{{ module }}',{% endfor %}],
-            datasets: [{
-                label: 'Moyennes par module',
-                data: [{% for module, data in modules.items() %}
-                    {% if data['total_coeff'] > 0 %}
-                        {{ (data['total_points'] / data['total_coeff'])|round(2) }},
-                    {% else %}
-                        0,
-                    {% endif %}
-                {% endfor %}],
-                backgroundColor: 'rgba(52, 152, 219, 0.6)',
-                borderColor: 'rgba(52, 152, 219, 1)',
-                borderWidth: 1
-            }]
-        };
-        new Chart(ctx, {
-            type: 'bar',
-            data: data,
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 20
-                    }
-                }
-            }
-        });
     </script>
 </body>
 </html>
