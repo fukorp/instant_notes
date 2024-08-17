@@ -1,9 +1,13 @@
 from flask import Flask, render_template
 import csv
 import codecs
-import os
 
+import os
+print("Répertoire de travail actuel :", os.getcwd())
 app = Flask(__name__)
+print("Fichiers dans le répertoire :")
+for file in os.listdir(os.path.dirname(__file__)):
+    print(file)
 
 def detect_delimiter(file_path):
     with codecs.open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
@@ -46,7 +50,6 @@ def read_csv_data():
 @app.route('/')
 def display_grades():
     grades_data = read_csv_data()
-    print("Données lues :", grades_data)  # Ajoutez cette ligne pour le débogage
     return render_template('grades.html', grades=grades_data)
 
 if __name__ == '__main__':

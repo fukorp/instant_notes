@@ -84,9 +84,7 @@
         .moyenne.rouge { color: #e74c3c; }
 
         .details {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease;
+            display: none;
         }
 
         .epreuve {
@@ -124,85 +122,102 @@
                 grid-template-columns: 1fr;
             }
         }
-        
-        .vert { color: green; }
-        .orange { color: orange; }
-        .rouge { color: red; }
-        .details { display: none; }
     </style>
 </head>
+</head>
 <body>
-    <div class="container">
-        <h1>Relevé de Notes</h1>
-        <div class="grid">
-            {% set modules = {} %}
-            {% for grade in grades %}
-                {% if grade['Module'] not in modules %}
-                    {% set _ = modules.update({grade['Module']: {'epreuves': [], 'total_points': 0, 'total_coeff': 0}}) %}
-                {% endif %}
-                {% set _ = modules[grade['Module']]['epreuves'].append(grade) %}
-                {% set note = grade['Notes']|float(default=0) %}
-                {% set coeff = grade["Coefficient de l'Épreuve dans le Module"]|float(default=0) %}
-                {% if note != 0 and coeff != 0 %}
-                    {% set _ = modules[grade['Module']].update({
-                        'total_points': modules[grade['Module']]['total_points'] + note * coeff,
-                        'total_coeff': modules[grade['Module']]['total_coeff'] + coeff
-                    }) %}
-                {% endif %}
+  <div class="container">
+    <h1>Relevé de Notes</h1>
+    <div class="grid">
+      {% set modules = {} %}
+      {% for grade in grades %}
+        {% if grade['Module'] not in modules %}
+          {% set _ = modules.update({grade['Module']: {'epreuves': [], 'total_points': 0, 'total_coeff': 0, 'v_count': 0, 'nv_count': 0}}) %}
+        {% endif %}
+        {% set _ = modules[grade['Module']]['epreuves'].append(grade) %}
+        {% set note = grade['Notes']|float(default=0) %}
+        {% set coeff = grade["Coefficient de l'Épreuve dans le Module"]|float(default=0) %}
+        {% if note != 0 and coeff != 0 %}
+          {% set _ = modules[grade['Module']].update({
+            'total_points': modules[grade['Module']]['total_points'] + note * coeff,
+            'total_coeff': modules[grade['Module']]['total_coeff'] + coeff
+          }) %}
+        {% elif grade['Notes'] == 'V' %}
+          {% set _ = modules[grade['Module']].update({'v_count': modules[grade['Module']]['v_count'] + 1}) %}
+        {% elif grade['Notes'] == 'NV' %}
+          {% set _ = modules[grade['Module']].update({'nv_count': modules[grade['Module']]['nv_count'] + 1}) %}
+        {% endif %}
+      {% endfor %}
+
+      {% for module, data in modules.items() %}
+        <div class="module">
+          <div class="module-header" onclick="toggleDetails(this)">
+            <h2>{{ module }}</h2>
+          </div>
+          <div class="module-content">
+            {% set total_points = 0 %}
+            {% set total_coeff = 0 %}
+            {% set has_nv = False %}
+            {% set has_numeric_notes = False %}
+            {% set only_v = True %}
+
+            {% for epreuve in data['epreuves'] %}
+              {% set note = epreuve['Notes'].replace(',', '.').strip() %}
+              {% set coefficient = epreuve["Coefficient de l'Épreuve dans le Module"]|float %}
+
+              {% if note.replace('.', '', 1).isdigit() %}
+                {% set points = note|float * coefficient %}
+                {% set total_points = total_points + points %}
+                {% set total_coeff = total_coeff + coefficient %}
+                {% set has_numeric_notes = True %}
+                {% set only_v = False %}
+              {% elif note == 'NV' %}
+                {% set has_nv = True %}
+                {% set only_v = False %}
+              {% elif note == 'V' %}
+                {% set only_v = only_v and True %}
+              {% endif %}
             {% endfor %}
 
-            {% for module, data in modules.items() %}
-                <div class="module">
-                    <div class="module-header" onclick="toggleDetails(this)">
-                        <h2>{{ module }}</h2>
-                    </div>
-                    <div class="module-content">
-                        {% set all_notes = [] %}
-                        {% for epreuve in data['epreuves'] %}
-                            {% set _ = all_notes.append(epreuve['Notes']) %}
-                        {% endfor %}
-                        {% set numeric_notes = all_notes|select('float') %}
-                        {% set v_only = all_notes|select('equalto', 'V') %}
-                        {% set nv_only = all_notes|select('equalto', 'NV') %}
+            {% if has_numeric_notes %}
+              {% set moyenne = (total_points / total_coeff)|round(2) %}
+              <div class="moyenne {% if moyenne >= 10 %}vert{% elif moyenne >= 7 %}orange{% else %}rouge{% endif %}">
+                {{ moyenne }}
+              </div>
+            {% elif has_nv %}
+              <div class="moyenne rouge">Non Validé</div>
+            {% elif only_v %}
+              <div class="moyenne vert">Validé</div>
+            {% else %}
+              <div class="moyenne">N/A</div>
+            {% endif %}
 
-                        {% if numeric_notes|length > 0 %}
-                            {% set moyenne = (data['total_points'] / data['total_coeff'])|round(2) %}
-                            <div class="moyenne {% if moyenne >= 10 %}vert{% elif moyenne >= 7 %}orange{% else %}rouge{% endif %}">
-                                {{ moyenne }}
-                            </div>
-                        {% elif nv_only|length > 0 %}
-                            <div class="moyenne rouge">Non Validé</div>
-                        {% elif v_only|length > 0 %}
-                            <div class="moyenne vert">Validé</div>
-                        {% else %}
-                            <div class="moyenne">N/A</div>
-                        {% endif %}
-
-                        <div class="details">
-                            {% for epreuve in data['epreuves'] %}
-                                <div class="epreuve">
-                                    <h3>{{ epreuve['Épreuve'].split(' - ', 1)[-1] }}</h3>
-                                    <p>Type: {{ epreuve['Type de contrôle'] }}</p>
-                                    <p>Date: {{ epreuve['Début'] }}</p>
-                                    <p class="note">Note: {{ epreuve['Notes'] }} (Coeff: {{ epreuve["Coefficient de l'Épreuve dans le Module"] }})</p>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
+            <div class="details">
+              {% for epreuve in data['epreuves'] %}
+                <div class="epreuve">
+                  <h3>{{ epreuve['Épreuve'].split(' - ', 1)[-1] }}</h3>
+                  <p>Type: {{ epreuve['Type de contrôle'] }}</p>
+                  <p>Date: {{ epreuve['Début'] }}</p>
+                  <p class="note">Note: {{ epreuve['Notes'] }} (Coeff: {{ epreuve["Coefficient de l'Épreuve dans le Module"] }})</p>
                 </div>
-            {% endfor %}
+              {% endfor %}
+            </div>
+          </div>
         </div>
+      {% endfor %}
     </div>
+  </div>
 
-    <script>
-        function toggleDetails(element) {
-            var details = element.nextElementSibling.querySelector('.details');
-            if (details.style.display === "none" || details.style.display === "") {
-                details.style.display = "block";
-            } else {
-                details.style.display = "none";
-            }
-        }
-    </script>
+  <script>
+    function toggleDetails(element) {
+      var details = element.nextElementSibling.querySelector('.details');
+      if (details.style.display === "none" || details.style.display === "") {
+        details.style.display = "block";
+      } else {
+        details.style.display = "none";   
+
+      }
+    }
+  </script>
 </body>
 </html>
