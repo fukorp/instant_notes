@@ -1,26 +1,27 @@
-# Instant Notes
-## _Vos notes de Centrale Lille instantanément_
+# **Instant Notes**
+### _Vos notes de Centrale Lille, instantanément et sans effort_
 
-Marre de devoir se connecter manuelement pour accéder à vos notes ?
-Avec Intant Notes, votre pc fait ça à votre place !
+### **Fatigué de vous connecter manuellement pour consulter vos notes ?**
+Avec **Instant Notes**, laissez votre PC faire le travail à votre place !
 
-- Récupération autonome de vos notes sur WebAurion
-- Affichage organisé de vos notes
-- Calcul automatique de vos moyennes
+- **Récupération automatique** de vos notes depuis WebAurion
+- **Affichage clair et organisé** de vos résultats
+- **Calcul instantané** de vos moyennes
 
-## Installation
+## **Installation**
 
-1 : [Installer Python]
-2 : Télècharger Instant Notes
-3 : Exécuter programme.bat
+1. [Installer Python]
+2. Télécharger **Instant Notes**
+3. Exécuter `Lancer Instant Notes.bat`
 
-## Améliorations potentielles
+## **Améliorations envisagées**
 
-- Réparation des moyennes
-- Deplacer template
-- Meilleur installateur
+- Correction du calcul des moyennes
+- Déplacement du template
+- Amélioration de l’installateur
 
 ---
-_by Foucault Wattinne_
+
+_Créé par Foucault Wattinne_
 
 [Installer Python]: <https://apps.microsoft.com/detail/9ncvdn91xzqp>
