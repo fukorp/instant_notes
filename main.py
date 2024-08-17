@@ -5,7 +5,8 @@ import venv
 global_csv_file_path = None
 
 print("Instant Notes créé par Foucault Wattinne ")
-print("https://github.com/fouxi/instant_notes")
+print("github.com/fukorp/instant_notes\n")
+
 def create_venv():
     venv_dir = 'venv'
     if not os.path.exists(venv_dir):
