@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 import venv
-
+global_csv_file_path = None
 def create_venv():
     venv_dir = 'venv'
     if not os.path.exists(venv_dir):
@@ -54,7 +54,18 @@ else:
     
 
 def download_results(username, password):
+    global global_csv_file_path
+    
+    menu_choice = input("Selection de la formation, entrez le chiffre correspondant:\n"
+            "1. ITEEM\n"
+            "2. Centrale\n"
+            "Enter your choice (1 or 2): ")
+    
     script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    csv_files = glob.glob(os.path.join(script_dir, '*.csv'))
+    for file in csv_files:
+        os.remove(file)
 
     options = Options()
     options.add_experimental_option("prefs", {
@@ -76,7 +87,14 @@ def download_results(username, password):
         password_elem.send_keys(Keys.RETURN)
 
         wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@class, 'ui-menuitem-link') and contains(., 'Résultats')]"))).click()
-        wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@class, 'ui-menuitem-link') and contains(., 'ITEEM')]"))).click()
+
+        if menu_choice == '1' or "I":
+            wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@class, 'ui-menuitem-link') and contains(., 'ITEEM')]"))).click()
+        elif menu_choice == '2' or "C":
+            wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@class, 'ui-menuitem-link') and contains(., 'Centrale')]"))).click()
+        else:
+            print("Invalid choice. Program will exit.")
+            return None
         wait.until(EC.element_to_be_clickable((By.XPATH, "//a[contains(@class, 'ui-menuitem-link') and contains(., 'aux épreuves')]"))).click()
 
         wait.until(EC.element_to_be_clickable((By.ID, "form:exportButton"))).click()
@@ -88,11 +106,7 @@ def download_results(username, password):
         new_filename = f"resultats_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         new_file = os.path.join(script_dir, new_filename)
         os.rename(old_file, new_file)
-
-        csv_files = glob.glob(os.path.join(script_dir, 'resultats_*.csv'))
-        csv_files.sort(key=os.path.getctime, reverse=True)
-        for file in csv_files[1:]:
-            os.remove(file)
+        global_csv_file_path = new_file
 
         print(f"Téléchargement terminé. Fichier sauvegardé : {new_filename}")
         return new_file
@@ -113,10 +127,11 @@ def detect_delimiter(file_path):
     return None
 
 def read_csv_data():
+    global global_csv_file_path
     print("Lecture des données...")
     grades = []
     try:
-        file_path = os.path.join(os.path.dirname(__file__), 'grades.csv')
+        file_path = os.path.join(os.path.dirname(__file__), global_csv_file_path)
         delimiter = detect_delimiter(file_path)
         if not delimiter:
             print("Impossible de détecter le séparateur du CSV.")
@@ -128,7 +143,7 @@ def read_csv_data():
                 grades.append(row)
 
     except FileNotFoundError:
-        print("Le fichier grades.csv n'a pas été trouvé.")
+        print("Le fichier csv n'a pas été trouvé.")
     except Exception as e:
         print(f"Une erreur s'est produite lors de la lecture du fichier : {e}")
     return grades
