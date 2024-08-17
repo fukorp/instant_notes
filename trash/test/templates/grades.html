@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relevé de Notes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #ecf0f1;
+            --text-color: #34495e;
+            --card-background: #ffffff;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 2.5em;
+            margin-bottom: 60px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            align-items: start;
+        }
+
+        .module {
+            background-color: var(--card-background);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .module:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .module-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            cursor: pointer;
+        }
+
+        .module-header h2 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+
+        .module-content {
+            padding: 20px;
+        }
+
+        .moyenne {
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .moyenne.vert { color: #2ecc71; }
+        .moyenne.orange { color: #f39c12; }
+        .moyenne.rouge { color: #e74c3c; }
+
+        .details {
+            display: none;
+        }
+
+        .epreuve {
+            border-top: 1px solid #eee;
+            padding: 10px 0;
+        }
+
+        .epreuve:first-child {
+            border-top: none;
+        }
+
+        .epreuve h3 {
+            margin: 0 0 10px 0;
+            font-size: 1em;
+            color: var(--primary-color);
+        }
+
+        .epreuve p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        .note {
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        #overallChart {
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+</head>
+<body>
+  <div class="container">
+    <h1>Relevé de Notes</h1>
+    <div class="grid">
+      {% set modules = {} %}
+      {% for grade in grades %}
+        {% if grade['Module'] not in modules %}
+          {% set _ = modules.update({grade['Module']: {'epreuves': [], 'total_points': 0, 'total_coeff': 0, 'v_count': 0, 'nv_count': 0}}) %}
+        {% endif %}
+        {% set _ = modules[grade['Module']]['epreuves'].append(grade) %}
+        {% set note = grade['Notes']|float(default=0) %}
+        {% set coeff = grade["Coefficient de l'Épreuve dans le Module"]|float(default=0) %}
+        {% if note != 0 and coeff != 0 %}
+          {% set _ = modules[grade['Module']].update({
+            'total_points': modules[grade['Module']]['total_points'] + note * coeff,
+            'total_coeff': modules[grade['Module']]['total_coeff'] + coeff
+          }) %}
+        {% elif grade['Notes'] == 'V' %}
+          {% set _ = modules[grade['Module']].update({'v_count': modules[grade['Module']]['v_count'] + 1}) %}
+        {% elif grade['Notes'] == 'NV' %}
+          {% set _ = modules[grade['Module']].update({'nv_count': modules[grade['Module']]['nv_count'] + 1}) %}
+        {% endif %}
+      {% endfor %}
+
+      {% for module, data in modules.items() %}
+        <div class="module">
+          <div class="module-header" onclick="toggleDetails(this)">
+            <h2>{{ module }}</h2>
+          </div>
+          <div class="module-content">
+            {% set total_points = 0 %}
+            {% set total_coeff = 0 %}
+            {% set has_nv = False %}
+            {% set has_numeric_notes = False %}
+            {% set only_v = True %}
+
+            {% for epreuve in data['epreuves'] %}
+              {% set note = epreuve['Notes'].replace(',', '.').strip() %}
+              {% set coefficient = epreuve["Coefficient de l'Épreuve dans le Module"]|float %}
+
+              {% if note.replace('.', '', 1).isdigit() %}
+                {% set points = note|float * coefficient %}
+                {% set total_points = total_points + points %}
+                {% set total_coeff = total_coeff + coefficient %}
+                {% set has_numeric_notes = True %}
+                {% set only_v = False %}
+              {% elif note == 'NV' %}
+                {% set has_nv = True %}
+                {% set only_v = False %}
+              {% elif note == 'V' %}
+                {% set only_v = only_v and True %}
+              {% endif %}
+            {% endfor %}
+
+            {% if has_numeric_notes %}
+              {% set moyenne = (total_points / total_coeff)|round(2) %}
+              <div class="moyenne {% if moyenne >= 10 %}vert{% elif moyenne >= 7 %}orange{% else %}rouge{% endif %}">
+                {{ moyenne }}
+              </div>
+            {% elif has_nv %}
+              <div class="moyenne rouge">Non Validé</div>
+            {% elif only_v %}
+              <div class="moyenne vert">Validé</div>
+            {% else %}
+              <div class="moyenne">N/A</div>
+            {% endif %}
+
+            <div class="details">
+              {% for epreuve in data['epreuves'] %}
+                <div class="epreuve">
+                  <h3>{{ epreuve['Épreuve'].split(' - ', 1)[-1] }}</h3>
+                  <p>Type: {{ epreuve['Type de contrôle'] }}</p>
+                  <p>Date: {{ epreuve['Début'] }}</p>
+                  <p class="note">Note: {{ epreuve['Notes'] }} (Coeff: {{ epreuve["Coefficient de l'Épreuve dans le Module"] }})</p>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <script>
+    function toggleDetails(element) {
+      var details = element.nextElementSibling.querySelector('.details');
+      if (details.style.display === "none" || details.style.display === "") {
+        details.style.display = "block";
+      } else {
+        details.style.display = "none";   
+
+      }
+    }
+  </script>
+</body>
+</html>

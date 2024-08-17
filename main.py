@@ -7,6 +7,7 @@ def create_venv():
     venv_dir = 'venv'
     if not os.path.exists(venv_dir):
         print("Création de l'environnement virtuel...")
+        print("Cette étape peut prendre du temps la première fois.")
         venv.create(venv_dir, with_pip=True)
     return venv_dir
 
@@ -35,7 +36,6 @@ if __name__ == "__main__":
     subprocess.call([python_path, "-c",
                      "from main import run_app; run_app()"])
 else:
-    print("ESLLZAFAZFLKZA?PFN?")
     from flask import Flask, render_template, send_from_directory, jsonify
     import csv
     import codecs
@@ -113,6 +113,7 @@ def detect_delimiter(file_path):
     return None
 
 def read_csv_data():
+    print("Lecture des données...")
     grades = []
     try:
         file_path = os.path.join(os.path.dirname(__file__), 'grades.csv')
@@ -125,13 +126,6 @@ def read_csv_data():
             csv_reader = csv.DictReader(file, delimiter=delimiter)
             for row in csv_reader:
                 grades.append(row)
-
-        print(f"Nombre de lignes lues : {len(grades)}")
-        if grades:
-            print("Exemple de première ligne :")
-            print(grades[0])
-        else:
-            print("Aucune donnée n'a été lue du fichier CSV.")
 
     except FileNotFoundError:
         print("Le fichier grades.csv n'a pas été trouvé.")
@@ -157,7 +151,7 @@ def run_app():
     if csv_file:
         print("Lancement du serveur Flask...")
         webbrowser.open('http://127.0.0.1:5000')  # Ouvre le navigateur automatiquement
-        app.run(debug=True)
+        app.run(debug=False)
     else:
         print("Échec du téléchargement des résultats. L'application ne peut pas être lancée.")
 
