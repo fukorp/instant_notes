@@ -95,36 +95,6 @@ def run_app():
                 os.remove(file)
             return csv_files[-1] if csv_files else None
 
-    def load_and_process_csv(file_path):
-        df = pd.read_csv(file_path, sep=';')
-        modules = defaultdict(list)
-        
-        for _, row in df.iterrows():
-            module = row['Module']
-            note = {
-                'epreuve': row['Épreuve'],
-                'note': float(row['Notes']) if pd.notna(row['Notes']) else None,
-                'coefficient': float(row["Coefficient de l'Épreuve dans le Module"]) if pd.notna(row["Coefficient de l'Épreuve dans le Module"]) else 1,
-                'details': {
-                    'type': row['Type de contrôle'],
-                    'detail': row['Détail sur le contrôle'],
-                    'debut': row['Début'],
-                    'fin': row['Fin'],
-                    'appreciation': row['Appréciation']
-                }
-            }
-            modules[module].append(note)
-        
-        for module, notes in modules.items():
-            total_weighted_score = sum(n['note'] * n['coefficient'] for n in notes if n['note'] is not None)
-            total_coefficient = sum(n['coefficient'] for n in notes if n['note'] is not None)
-            moyenne = total_weighted_score / total_coefficient if total_coefficient > 0 else None
-            modules[module] = {
-                'notes': notes,
-                'moyenne': moyenne
-            }
-        
-        return modules
 
     @app.route('/')
     def index():
